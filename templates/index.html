@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hotel Booking DApp</title>
+  <style>
+    :root {
+      --bg: #f4efe5;
+      --panel: #fffaf0;
+      --text: #2a1f16;
+      --accent: #bb4f2b;
+      --border: #d8cbb7;
+      --ok: #1e7f3b;
+      --err: #a62222;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: radial-gradient(circle at top right, #ffe2b8, var(--bg) 45%);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 14px 32px rgba(52, 28, 13, 0.15);
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 1.8rem;
+    }
+
+    p {
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 120ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    #result {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #f5ede0;
+      border: 1px solid var(--border);
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 48px;
+    }
+
+    .ok { color: var(--ok); }
+    .err { color: var(--err); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Hotel Booking</h1>
+    <p>This page sends a booking transaction to your smart contract (deployed from Remix).</p>
+
+    <form id="bookingForm">
+      <label for="checkIn">Check-in date</label>
+      <input id="checkIn" type="date" required>
+
+      <label for="checkOut">Check-out date</label>
+      <input id="checkOut" type="date" required>
+
+      <button type="submit">Book Room (1 ETH)</button>
+    </form>
+
+    <div id="result">Waiting for submission...</div>
+  </main>
+
+  <script>
+    const form = document.getElementById('bookingForm');
+    const result = document.getElementById('result');
+
+    function toUnixSeconds(dateStr) {
+      return Math.floor(new Date(dateStr + 'T00:00:00').getTime() / 1000);
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const checkIn = document.getElementById('checkIn').value;
+      const checkOut = document.getElementById('checkOut').value;
+
+      if (!checkIn || !checkOut) {
+        result.className = 'err';
+        result.textContent = 'Please select both check-in and check-out dates.';
+        return;
+      }
+
+      const payload = {
+        checkIn: toUnixSeconds(checkIn),
+        checkOut: toUnixSeconds(checkOut)
+      };
+
+      result.className = '';
+      result.textContent = 'Submitting transaction...';
+
+      try {
+        const response = await fetch('/book', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          result.className = 'err';
+          result.textContent = 'Error: ' + (data.error || 'Booking failed');
+          return;
+        }
+
+        result.className = 'ok';
+        result.textContent = 'Success. Tx Hash:\n' + data.txHash;
+      } catch (error) {
+        result.className = 'err';
+        result.textContent = 'Network error: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
